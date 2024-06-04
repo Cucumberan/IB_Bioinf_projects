@@ -1,0 +1,205 @@
+
+make_sorting=True
+SRA = config['sample']
+id = config['id']
+number = config['freq']
+
+
+rule sample_download:
+"""
+Downloads a FASTQ file using fastq-dump from the SRA toolkit.
+
+Args:
+    SRA (str): SRA sample ID to download.
+
+Outputs:
+    A FASTQ file named after the SRA sample ID.
+
+Shell Command:
+    Uses `fastq-dump` to download and directly write the FASTQ to output.
+"""
+	output:
+		expand("{SRA}.fastq", SRA=SRA)
+	shell:
+		"""
+		fastq-dump {SRA} --stdout > {output}
+		"""
+
+rule reference_download: 
+"""
+Downloads a reference genome in FASTA format using NCBI's efetch tool.
+
+Args:
+    id (str): Identifier for the reference genome.
+
+Outputs:
+    A FASTA file named after the reference ID.
+
+Shell Command:
+    Uses `efetch` to download the specified genome in FASTA format.
+"""
+	output:
+		expand("{id}.fasta", id=id)
+	shell:
+		"efetch -db nucleotide -id {id} -format fasta > {output}"
+
+
+rule bwa_index:
+"""
+Indexes a reference genome using BWA.
+
+Inputs:
+    reference.fasta: The reference genome file in FASTA format.
+
+Outputs:
+    Multiple BWA index files necessary for alignment.
+
+Shell Command:
+    Executes `bwa index` to generate index files from the reference FASTA.
+"""
+    input:
+        "{reference}.fasta" 
+    output:
+        "{reference}.fasta.amb",
+        "{reference}.fasta.ann",
+        "{reference}.fasta.bwt",
+        "{reference}.fasta.pac",
+        "{reference}.fasta.sa"
+    shell:
+        "bwa index {input}"
+
+rule bwa_align:
+"""
+Aligns reads to a reference genome using BWA-MEM and converts output to BAM format using samtools.
+
+Inputs:
+    Multiple BWA index files and the reference genome in FASTA format.
+    reads (str): FASTQ file containing the reads.
+
+Threads:
+    Uses 12 threads to improve the alignment speed.
+
+Outputs:
+    An unsorted BAM file with the alignments.
+
+Shell Command:
+    Uses `bwa mem` for alignment and `samtools view` for BAM conversion.
+"""
+    input:
+        "{reference}.fasta.amb",
+        "{reference}.fasta.ann",
+        "{reference}.fasta.bwt",
+        "{reference}.fasta.pac",
+        "{reference}.fasta.sa",
+        ref="{reference}.fasta",
+        reads="{sample}.fastq"
+    threads:12
+    output:
+        temporary("{reference}.{sample}.unsorted.bam")
+    shell:
+        "bwa mem -t {threads} {input.ref} {input.reads} | samtools view -b > {output}"
+
+rule bam_sort:
+"""
+Sorts a BAM file using samtools.
+
+Inputs:
+    An unsorted BAM file from the bwa_align rule.
+
+Outputs:
+    A sorted BAM file, marked as protected to prevent accidental modification.
+
+Threads:
+    Uses 12 threads for faster sorting.
+
+Shell Command:
+    Sorts the BAM file using `samtools sort`.
+"""
+    input:
+        rules.bwa_align.output     
+    output:
+        protected("{reference}.{sample}.sorted.bam")
+    threads: 12
+    shell:
+        "samtools sort --threads {threads} {input} > {output}"
+
+rule bam_index:
+"""
+Creates an index for a sorted BAM file using samtools index.
+
+Inputs:
+    A sorted BAM file.
+
+Outputs:
+    BAM index file (.bai).
+
+Shell Command:
+    Indexes the sorted BAM file to facilitate quick access.
+"""
+	input:
+		rules.bam_sort.output
+	output:
+		"{reference}.{sample}.sorted.bam.bai"
+	shell:
+		"samtools index {input}"
+
+rule mpileup:
+"""
+Generates an mpileup file from a sorted and indexed BAM file using samtools.
+
+Inputs:
+    A sorted BAM file and its corresponding index file.
+    The reference genome in FASTA format.
+
+Outputs:
+    An mpileup file named after the reference and sample ID.
+
+Shell Command:
+    Uses `samtools mpileup` to generate the mpileup file.
+"""
+	input:
+		"{reference}.{sample}.sorted.bam.bai",
+		ref="{reference}.fasta",
+		sort_bam="{reference}.{sample}.sorted.bam"
+	output:
+		"{reference}.{sample}.my.mpileup"
+	shell:
+		"samtools mpileup -d 0 -f {input.ref} {input.sort_bam} > {output}"
+
+rule varscan:
+"""
+Calls variants using Varscan on the mpileup file based on a specified frequency threshold.
+
+Inputs:
+    An mpileup file.
+
+Outputs:
+    A VCF file containing SNPs called by Varscan.
+
+Args:
+    number (float): Frequency threshold for calling variants.
+
+Shell Command:
+    Executes `varscan mpileup2snp` to call SNPs with the specified minimum variant frequency.
+"""
+	input:
+		"{reference}.{sample}.my.mpileup"
+	output:
+		"{reference}.{sample}.varscan.{number}.vcf"
+	shell:
+		"varscan mpileup2snp {input} --min-var-freq {number} --variants --output-vcf 1 > {output}"
+
+
+rule process_vcf_to_csv:
+"""
+Converts specific fields from a VCF file to a CSV format, skipping header lines and extracting genomic data.
+"""
+    input:
+        "{reference}.{sample}.varscan.{number}.vcf"
+    output:
+        "{reference}.{sample}.varscan.{number}.csv"
+    shell:
+        """
+        cat {input} | awk 'NR>24 {{print $1, $2, $4, $5, $10}}' > {output}
+        """
+
