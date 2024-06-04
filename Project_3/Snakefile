@@ -1,0 +1,23 @@
+
+SAMPLES = [config['sample']]
+READS = [config['reads']]
+
+rule all:
+    input:
+        expand("{sample}_{read}.fastqc.html", sample=SAMPLES, read=READS)
+
+rule unzip_file:
+    input:
+        "{file}.fastq.gz"
+    output:
+        "{file}.fastq"
+    shell:
+        "gzip -d {input} > {output} "
+
+rule run_fastqc:
+    input:
+        "{file}.fastq"
+    output:
+        "{file}.fastqc.html"
+    shell:
+        "fastqc -o . {input}"
