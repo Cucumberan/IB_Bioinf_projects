@@ -22,7 +22,7 @@ The goal of this practical work was to check out the hypothesis that a small por
 
 *Skills: deep sequence data, awk one-liners, epitope mapping, sequencing errors detection*
 
-## Project_3. E.coli outbreak investigation 
+## Project_3. E.coli outbreak investigation 🌱
 
 In April 2011, hundreds of people in Germany were hospitalized with hemolytic uremic syndrome (HUS), a deadly blood disease that often starts as food poisoning with bloody diarrhea and can lead to kidney failure. German health officials immediately informed the World Health Organization about the incident, but they had no idea that it was the beginning of the deadliest E. coli outbreak in recent history, caused by a mysterious strain that we will call E. coli X. 
 
@@ -30,11 +30,19 @@ In this project, I followed in the footsteps of the bioinformaticians investigat
 
 *Skills: de novo genome assambly, comparative genomics-based gene annotation, alignements visualisation*
 
-## Project_4. Tardigrades: from genestealers to space marines 
+## Project_4. Tardigrades: from genestealers to space marines 🌸
+Tardigrades (also known as water bears, pudgy wudgies, or moss piglets) are microscopic animals capable of withstanding some of the most severe environmental conditions, including radiation.  Scientists tried to explain tardigrades' radiation withstand with the fact that they are able to enter the dehydrated state (and survive in up to five years), and this state provides fewer reactants for ionizing radiation. But later it was shown that when hydrated, they still remain highly resistant to shortwave UV radiation in comparison to other animals.  But how?  In this project we tried to analyze their genome and understand this secret.
 
+*Skills: functional annotation, protein localisation prediction, DNA-bound proteins detection*
 
+## Project_5. H+ or how to build a perfect human? 🌳
 
-## Project_5. H+ or how to build a perfect human? 🐙
+The goal of this project was to  imagine that we are in the not-too-distant-future, where transhumanism has been widely accepted, and we are allowed to use CRISPR-Cas9 on humans and I you just could order a DIY kit to make any corrections to your DNA (actually, you can order it now, but just for E. coli). What would I change? 
 
+*Skills: SNP annotation (ClinVar, SnpEff/SnpSift, GWAS catalog), variant effect prediction*
 
-## Project_6. RNA-seq: baking bread. 🐷 
+## Project_6. RNA-seq: baking bread. 💚 
+The goal of the project was to see in-detail the changes in RNA expression during the fermentation process in in yeast cells.
+
+*Skills: splice-junction aware alignment, guided transcript assembly, differential expression analysis*
+
